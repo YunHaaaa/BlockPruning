@@ -1,0 +1,21 @@
+_target_: pytorch_lightning.Trainer
+
+# set `1` to train on GPU, `0` to train on CPU only
+gpus: 1
+accelerator: ddp
+precision: 16
+
+min_epochs: 1
+max_epochs: 5
+
+weights_summary: null
+progress_bar_refresh_rate: 5
+resume_from_checkpoint: null
+
+# We don't need it as we manually launch the validation loop before training
+num_sanity_val_steps: 0
+
+val_check_interval: 0.5
+
+# With this, we would subsample dataset at every epoch
+reload_dataloaders_every_n_epochs: 1

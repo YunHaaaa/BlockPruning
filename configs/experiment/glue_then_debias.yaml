@@ -1,0 +1,37 @@
+# @package _global_
+
+# Run:
+# CUDA_VISIBLE_DEVICES=3 python run.py experiment=glue_then_debias
+
+# Run everything:
+
+# CUDA_VISIBLE_DEVICES=0 python run.py --multirun \
+#     experiment=glue_then_debias \
+#     model.is_glue=True \
+#     model.embedding_layer=last,all \
+#     model.debias_mode=sentence,token \
+#     glue='cola','sst2','mrpc','stsb','qqp','mnli','qnli','rte','wnli'
+
+
+defaults:
+  - override /trainer: default.yaml
+  - override /model: debiaser.yaml
+  - override /datamodule: default.yaml
+  - override /callbacks: default.yaml
+  - override /logger: tensorboard.yaml
+
+glue: cola
+exp_name: glue-then-debs/${glue}/${model.model_name}/${model.embedding_layer}-layer/${model.debias_mode}-debias
+
+model:
+  _target_: src.models.debiaser.Debiaser
+  model_name: 'bert-base-uncased'
+  hf_checkpoint: /remote/csifs1/disk1/przm/models/vanilla/bert-base-uncased/glue/${glue}
+  is_glue: True
+
+datamodule:
+  batch_size: 128
+  num_workers: 0
+
+trainer:
+  max_epochs: 3
