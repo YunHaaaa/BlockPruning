@@ -39,8 +39,6 @@ def extract_data(
 
     dataset = load_dataset('text', data_files=rawdata_path, split="train[:]")
     dataset = dataset.map(lambda examples: tokenizer(examples['text']), num_proc=np)
-    dataset = dataset.map(lambda examples: get_keyword_mask(examples, tokenizer), num_proc=np)
-    dataset = dataset.filter(lambda examples: sum(examples['keyword_mask']) > 0, num_proc=np)
 
     dataset = dataset.train_test_split(test_size=1000)
     dataset.set_format(type='torch', columns=['input_ids', 'attention_mask', 'keyword_mask'])
@@ -49,23 +47,3 @@ def extract_data(
 
     return dataset
 
-
-def get_keyword_mask(example, tokenizer):
-
-    sentence_tokens = example['input_ids']
-    keywords = ' '.join(example['keywords'])
-
-    # Remove CLS/SEP and reshape, so it broadcasts nicely
-    keyword_tokens = tokenizer(keywords, padding=False)
-    keyword_tokens = torch.tensor(keyword_tokens['input_ids'])
-    keyword_tokens = keyword_tokens[1:-1].reshape((-1, 1))
-
-    sentence_tokens = torch.tensor(sentence_tokens).squeeze(0)
-
-    # Mask indicating positions of attributes within sentence econdings
-    # Each row of (sent==attr) contains position of consecutive tokens
-    mask = (sentence_tokens == keyword_tokens).sum(0)
-
-    example['keyword_mask'] = mask
-
-    return example

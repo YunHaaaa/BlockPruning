@@ -7,7 +7,6 @@ data_dir: ${data_dir}
 datafiles:
     plaintext: 'http://data.statmt.org/news-commentary/v15/training-monolingual/news-commentary-v15.en.gz'
 
-seat_data:
 
 seed: ${seed}
 num_proc: 32
