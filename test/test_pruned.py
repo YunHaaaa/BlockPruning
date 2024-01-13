@@ -3,7 +3,7 @@ import copy
 import torch
 
 
-from src.models.debiaser_pruned import DebiaserPruned
+from src.models.pruned import Pruned
 
 
 # From project root dir:
@@ -24,7 +24,7 @@ class TestPipeline(unittest.TestCase):
         self.model_args = {
             'model_name': 'bert-base-uncased',
             'embedding_layer': 'last',
-            'debias_mode': 'sentence',
+            'mode': 'sentence',
             'learning_rate': 0,
             'weight_decay': 0,
             'adam_eps': 0,
@@ -37,7 +37,7 @@ class TestPipeline(unittest.TestCase):
         }
 
     def helper_freeze_weights(self, model):
-        for name, p in model.model_debias.named_parameters():
+        for name, p in model.model_pruning.named_parameters():
             if 'mask_scores' in name:
                 self.assertTrue(p.requires_grad)
             else:
@@ -45,7 +45,7 @@ class TestPipeline(unittest.TestCase):
 
     def helper_score_share(self, model):
         # For each layer
-        for layer in model.model_debias.model.encoder.layer:
+        for layer in model.model_pruning.model.encoder.layer:
             per_layer_ptrs = []
             # Check whether Q, K, V scores point to the same mem
             for name, param in layer.named_parameters():
@@ -59,10 +59,10 @@ class TestPipeline(unittest.TestCase):
         model_args['share_pruning_scores'] = False
         model_args['prune_values_only'] = True
 
-        model = DebiaserPruned(**model_args)
+        model = Pruned(**model_args)
         model.train()
 
-        optimizer = torch.optim.SGD(model.model_debias.parameters(), lr=0.001, momentum=0.9)
+        optimizer = torch.optim.SGD(model.model_pruning.parameters(), lr=0.001, momentum=0.9)
         gt = torch.rand(4, 128, 768)
 
         # simulate training loop
@@ -75,12 +75,12 @@ class TestPipeline(unittest.TestCase):
             }
 
             model.model_patcher.schedule_threshold(i, 10, True)
-            y = model.model_debias(sentences)
+            y = model.model_pruning(sentences)
             loss = (y - gt).pow(2).mean()
             loss.backward()
             optimizer.step()
 
-        for name, p in model.model_debias.named_parameters():
+        for name, p in model.model_pruning.named_parameters():
             print(name, '\t', p.requires_grad)
             if 'mask_module' in name:
                 if 'value' in name:
@@ -90,7 +90,7 @@ class TestPipeline(unittest.TestCase):
                     self.assertTrue(torch.allclose(p.data, torch.tensor(420.0)))
 
     def test_everything(self):
-        model = DebiaserPruned(**self.model_args)
+        model = Pruned(**self.model_args)
         self.helper_freeze_weights(model)
         self.helper_score_share(model)
         self.helper_freeze_weights(model)

@@ -1,0 +1,33 @@
+defaults:
+  - /pruning: sparse_trainer_args.yaml
+  - override /trainer: default.yaml
+  - override /model: pruning.yaml
+  - override /datamodule: default.yaml
+  - override /callbacks: default.yaml
+  - override /logger: tensorboard.yaml
+
+
+# Eg: pruned/B64x768/bert-base-uncased/all-layer/token-pruning
+exp_name: pruned/B64x768/${model.model_name}/${model.embedding_layer}-layer/${model.mode}-pruning
+
+pruning:
+  attention_block_rows: 64
+  attention_block_cols: 768
+
+model:
+  _target_: src.models.pruned.Pruned
+  model_name: 'bert-base-uncased'
+  sparse_train_args: ${pruning}
+  freeze_weights: True
+
+datamodule:
+  batch_size: 128
+  num_workers: 0
+
+callbacks:
+  checkpoint_callback:
+    compile_pruned: True
+
+trainer:
+  max_epochs: 100
+

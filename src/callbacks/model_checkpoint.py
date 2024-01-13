@@ -16,18 +16,17 @@ class ModelCheckpointWithHuggingface(ModelCheckpoint):
         # Save Lightning checkpoint (everything)
         super().on_save_checkpoint(trainer, pl_module, checkpoint)
 
-        # Save debiased model and tokenizer only (🤗 compatibile)
         # filename = epoch=X-step=X
         filename = self._format_checkpoint_name(
             None, dict(epoch=trainer.current_epoch, step=trainer.global_step)
         )
 
-        path = Path(self.dirpath) / "debias" / filename
+        path = Path(self.dirpath) / "pruning" / filename
 
         pl_module.tokenizer._tokenizer.save_pretrained(path)
 
         if not self.compile_pruned:
-            pl_module.model_debias.model.save_pretrained(path)
+            pl_module.model_pruning.model.save_pretrained(path)
         else:
             # TODO: save spars_args.json, trainin_args.json, ...
             model = pl_module.compile_model()

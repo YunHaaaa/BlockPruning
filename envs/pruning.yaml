@@ -1,4 +1,4 @@
-name: pruning-bias
+name: pruning
 channels:
   - pytorch
   - conda-forge

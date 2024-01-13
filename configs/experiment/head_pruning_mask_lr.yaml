@@ -1,15 +1,7 @@
-# @package _global_
-
-# A config for debiased attention head fine-pruning (block size 64x768)
-# In this experiment we freeze weights of Bert and we train the scores only.
-
-# Run:
-# > CUDA_VISIBLE_DEVICES=3 python run.py experiment=debias_head_pruning_mask_lr
-
 defaults:
   - /pruning: sparse_trainer_args.yaml
   - override /trainer: default.yaml
-  - override /model: debiaser.yaml
+  - override /model: pruning.yaml
   - override /datamodule: default.yaml
   - override /callbacks: default.yaml
   - override /logger: tensorboard.yaml
@@ -21,7 +13,7 @@ pruning:
   mask_scores_learning_rate: 0.001  # 1/10th
 
 model:
-  _target_: src.models.debiaser_pruned.DebiaserPruned
+  _target_: src.models.pruned.Pruned
   model_name: 'bert-base-uncased'
   sparse_train_args: ${pruning}
   freeze_weights: True
@@ -37,4 +29,4 @@ callbacks:
 trainer:
   max_epochs: 20
 
-exp_name: pruned/B64x768/mask-lr${pruning.mask_scores_learning_rate}/${model.model_name}/${model.embedding_layer}-layer/${model.debias_mode}-debias
+exp_name: pruned/B64x768/mask-lr${pruning.mask_scores_learning_rate}/${model.model_name}/${model.embedding_layer}-layer/${model.mode}-pruning

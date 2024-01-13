@@ -4,7 +4,7 @@
 defaults: 
   - _self_
   - trainer: default.yaml
-  - model: debiaser.yaml
+  - model: pruning.yaml
   - datamodule: default.yaml
   - callbacks: default.yaml
   - logger: tensorboard.yaml
@@ -25,7 +25,7 @@ work_dir: ${hydra:runtime.cwd}
 # path to folder with data
 data_dir: ${work_dir}/data
 
-exp_name: ${model.model_name}/${model.embedding_layer}-layer/${model.debias_mode}-debias
+exp_name: ${model.model_name}/${model.embedding_layer}-layer/${model.mode}-pruning
 
 # use `python run.py debug=true` for easy debugging!
 # this will run 1 train, val and test loop with only 1 batch

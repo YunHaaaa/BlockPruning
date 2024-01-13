@@ -16,11 +16,11 @@ log = get_logger(__name__)
 
 
 @dataclass(unsafe_hash=True)
-class Debiaser(LightningModule):
+class Pruner(LightningModule):
 
     model_name: str
     embedding_layer: str
-    debias_mode: str
+    mode: str
     learning_rate: float
     weight_decay: float
     adam_eps: float
@@ -41,17 +41,17 @@ class Debiaser(LightningModule):
         super().__init__()
         self.save_hyperparameters()
 
-        self.model_debias = Pipeline(
+        self.model_pruning = Pipeline(
             model_name=self.model_name,
             embedding_layer=self.embedding_layer,
-            debias_mode=self.debias_mode,
+            mode=self.mode,
             hf_checkpoint=self.hf_checkpoint,
             is_glue=self.is_glue
         )
         self.model_original = Pipeline(
             model_name=self.model_name,
             embedding_layer='all',   # See Eq. (3)
-            debias_mode='sentence',  # See Eq. (3)
+            mode='sentence',  # See Eq. (3)
             hf_checkpoint=self.hf_checkpoint,
             is_glue=self.is_glue
         )
@@ -59,8 +59,7 @@ class Debiaser(LightningModule):
         self.tokenizer = Tokenizer(self.model_name)
 
     def forward(self, inputs, return_word_embs=None, embedding_layer=None):
-        """Forward pass of the model to be debiased."""
-        return self.model_debias(inputs, return_word_embs, embedding_layer)
+        return self.model_pruning(inputs, return_word_embs, embedding_layer)
 
     def forward_original(self, inputs, return_word_embs=None, embedding_layer=None):
         """Forward pass of the original model (frozen)."""
@@ -68,26 +67,10 @@ class Debiaser(LightningModule):
             return self.model_original(inputs, return_word_embs, embedding_layer)
 
     def loss_regularize(self, attributes, attributes_original):
-        """Loss for regularization (L2), Eq.(3)
-
-        Args: contextualied embeddings of attributes, wrt to debiased
-            and original model, respectively. Both are of shape:
-            (batch_sz * n, emb_dim), where
-            n = num_layers if embedding_layer=='all' else 1.
-        """
         assert attributes.shape == attributes_original.shape
         return (attributes - attributes_original).pow(2).sum(1).mean()
 
     def step(self, batch) -> Dict[str, float]:
-        """A step performed on training and validation.
-
-        This is basically Eq.(4) in the paper.
-
-        It computes debiasing loss with the regularizer term.
-
-        Note, that in the regularization term, *word* embeddings are taken
-        across *all* layers in both models (see Eq. 3).
-        """
         loss = self.loss_alpha  + self.loss_beta 
 
         return loss
@@ -128,7 +111,7 @@ class Debiaser(LightningModule):
 
     def configure_optimizers(self):
         optimizer = AdamW(
-            self.model_debias.parameters(),
+            self.model_pruning.parameters(),
             weight_decay=self.weight_decay,
             lr=self.learning_rate,
             eps=self.adam_eps

@@ -16,7 +16,7 @@ log = get_logger(__name__)
 
 
 @dataclass(unsafe_hash=True)
-class DebiasDataModule(LightningDataModule):
+class DataModule(LightningDataModule):
     model_name: str
     batch_size: int
     data_dir: str

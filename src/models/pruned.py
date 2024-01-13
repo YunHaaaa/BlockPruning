@@ -8,13 +8,13 @@ from nn_pruning.patch_coordinator import (
     ModelPatchingCoordinator,
 )
 
-from src.models.debiaser import Debiaser
+from src.models.pruner import Pruner
 from src.utils.utils import get_logger
 
 log = get_logger(__name__)
 
 
-class DebiaserPruned(Debiaser):
+class Pruned(Pruner):
 
     sparse_train_args: Dict[str, Any]
     freeze_weights: bool
@@ -42,7 +42,7 @@ class DebiaserPruned(Debiaser):
             teacher_constructor=None,  # TODO
         )
 
-        self.model_patcher.patch_model(self.model_debias.model)
+        self.model_patcher.patch_model(self.model_pruning.model)
 
         if self.freeze_weights:
             self.freeze_non_mask()
@@ -57,17 +57,17 @@ class DebiaserPruned(Debiaser):
             self.update_only_values()
 
     def disable_fc_pruning(self):
-        for name, param in self.model_debias.named_parameters():
+        for name, param in self.model_pruning.named_parameters():
             if 'mask_scores' in name and 'attention' not in name:
                 param.requires_grad = False
 
     def freeze_non_mask(self):
-        for name, param in self.model_debias.named_parameters():
+        for name, param in self.model_pruning.named_parameters():
             if name.split('.')[-1] != 'mask_scores':
                 param.requires_grad = False
 
     def _share_pruning_scores(self):
-        for layer in self.model_debias.model.encoder.layer:
+        for layer in self.model_pruning.model.encoder.layer:
             Qms = layer.attention.self.query.mask_module.context_modules[0].mask_scores.data
             layer.attention.self.key.mask_module.context_modules[0].mask_scores.data = Qms
             layer.attention.self.value.mask_module.context_modules[0].mask_scores.data = Qms
@@ -76,7 +76,7 @@ class DebiaserPruned(Debiaser):
         """Just disable gradient updates for self-attenion keys and queries.
         Set their params to 420, just in case (sigmoid(420)=1)
         """
-        for name, p in self.model_debias.named_parameters():
+        for name, p in self.model_pruning.named_parameters():
             if 'mask_module' in name:
                 if 'value' in name:
                     p.requires_grad = True
@@ -95,7 +95,7 @@ class DebiaserPruned(Debiaser):
     def training_step(self, batch: Any, batch_idx: int):
         loss = super().training_step(batch, batch_idx)
 
-        loss_prune_reg, _, _ = self.model_patcher.regularization_loss(self.model_debias.model)
+        loss_prune_reg, _, _ = self.model_patcher.regularization_loss(self.model_pruning.model)
 
         self.log(
             "train/loss/prune/regularize", loss_prune_reg,
@@ -109,7 +109,7 @@ class DebiaserPruned(Debiaser):
 
     def compile_model(self):
         """Returns compiled copy of a debiaed model (NOT in place)."""
-        model = copy.deepcopy(self.model_debias.model)
+        model = copy.deepcopy(self.model_pruning.model)
         removed, heads = self.model_patcher.compile_model(model)
 
         log.info(f"Compiled model. Removed {removed} / {heads} heads.")
@@ -123,7 +123,7 @@ class DebiaserPruned(Debiaser):
             weight_decay=self.weight_decay
         )
         optim_groups = self.model_patcher.create_optimizer_groups(
-            self.model_debias.model,
+            self.model_pruning.model,
             args=training_args,  # TODO: check values
             sparse_args=self.sparse_args
         )

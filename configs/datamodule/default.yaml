@@ -1,4 +1,4 @@
-_target_: src.datamodules.debias_datamodule.DebiasDataModule
+_target_: src.datamodules.datamodule.DataModule
 
 model_name: ${model.model_name}
 batch_size: 128

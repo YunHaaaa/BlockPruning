@@ -17,7 +17,7 @@ def dict_to_device(dictornary, device):
 
 def evaluate(model_name, device, seat_data, data_root):
 
-    model = Pipeline(model_name, embedding_layer='CLS', debias_mode='sentence').to(device)
+    model = Pipeline(model_name, embedding_layer='CLS', mode='sentence').to(device)
     tokenizer = Tokenizer(model_name)
 
     results = {}

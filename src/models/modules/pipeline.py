@@ -7,42 +7,24 @@ import torch.nn as nn
 
 class Pipeline(nn.Module):
 
-    AVAILABLE_DEBIASIG_MODES = ['sentence', 'token']
+    AVAILABLE_PRUNING_MODES = ['sentence', 'token']
 
     def __init__(
         self,
         model_name: str,
         embedding_layer: str,
-        debias_mode: str,
+        mode: str,
         hf_checkpoint: str = None,
         is_glue: bool = False,
     ) -> None:
-        """Wrapper for 🤗's pipeline abstraction with custom embedding getter.
-
-        Args:
-            model_name: e.g.: `bert-base-uncased`
-            embedding_layer: from where to get the embeddings?
-                Available: CLS|first|last|all
-                'CLS': sentence representation as embedding of the [CLS] token
-                    (taken at the last hidden state)
-                'first': first layer
-                'last': last layer
-                'all': all layers, stacked vertically
-                'intermediate': layers index 1-4 inclusive
-            debias_mode: sentence|token.
-                'sentence': retruns embeddings of the whole sentence.
-                'token': retruns words embeddings only, as indicated by 'keyword_mask'.
-            hf_checkpoint: path to 🤗-compatibile checkpoint
-            is_glue: if true, loads model "for sequence classification"
-        """
         super().__init__()
 
-        if debias_mode not in self.AVAILABLE_DEBIASIG_MODES:
-            raise ValueError(f"Debiasing mode must be 'sentence' or 'token'. Given: {debias_mode}")
+        if mode not in self.AVAILABLE_PRUNING_MODES:
+            raise ValueError(f"Pruning mode must be 'sentence' or 'token'. Given: {mode}")
 
         self.model_name = model_name
         self.embedding_layer = embedding_layer
-        self.return_word_embs = (debias_mode == 'token')
+        self.return_word_embs = (mode == 'token')
         self.is_glue = is_glue
 
         if not self.is_glue:
