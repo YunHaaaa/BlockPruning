@@ -24,31 +24,10 @@ def get_keyword_set(filepath: str) -> set:
 
 def extract_data(
     rawdata_path: Path,
-    male_attr_path: Path,
-    female_attr_path: Path,
-    stereo_target_path: Path,
     model_name: str,
     data_root: Path,
     num_proc: int,
-) -> Dict[str, List[str]]:
-    """Extracts, pre-processes and caches data.
-
-    Extracts sentences that contain particular words: male&female attributes
-    and stereotypes.
-
-    Args:
-        rawdata_path: path to a textfile with one sentence per line
-        {male, female}_attr_path: textfile with one keyword per line
-        stereo_target_path: textfile with one keyword per line
-        model_name: used to instantiate a tokenizer.
-        data_root: where to cache the data.
-        num_proc: on how many processes run data pre-processing
-    """
-    # Get lists of attributes and targets
-    male_attr = get_keyword_set(male_attr_path)
-    female_attr = get_keyword_set(female_attr_path)
-    stereo_trgt = get_keyword_set(stereo_target_path)
-
+) :
     tokenizer = Tokenizer(model_name)
 
     # This regexp basically tokenizes a sentence over spaces and 's, 're, 've..
@@ -59,71 +38,16 @@ def extract_data(
     # https://huggingface.co/docs/datasets/process.html#save
 
     dataset = load_dataset('text', data_files=rawdata_path, split="train[:]")
-    dataset = dataset.map(
-        lambda examples: get_keyword(examples, male_attr, female_attr, stereo_trgt, pattern),
-        num_proc=np
-    )
-    dataset = dataset.filter(lambda examples: examples['type'] != 'none', num_proc=np)
     dataset = dataset.map(lambda examples: tokenizer(examples['text']), num_proc=np)
     dataset = dataset.map(lambda examples: get_keyword_mask(examples, tokenizer), num_proc=np)
     dataset = dataset.filter(lambda examples: sum(examples['keyword_mask']) > 0, num_proc=np)
 
-    male = dataset.filter(lambda example: example['type'] == 'male', num_proc=np)
-    female = dataset.filter(lambda example: example['type'] == 'female', num_proc=np)
-    stereo = dataset.filter(lambda example: example['type'] == 'stereotype', num_proc=np)
+    dataset = dataset.train_test_split(test_size=1000)
+    dataset.set_format(type='torch', columns=['input_ids', 'attention_mask', 'keyword_mask'])
 
-    male = male.train_test_split(test_size=1000)
-    female = female.train_test_split(test_size=1000)
-    target = stereo.train_test_split(test_size=1000)
+    dataset.save_to_disk(data_root / "dataset")
 
-    male.set_format(type='torch', columns=['input_ids', 'attention_mask', 'keyword_mask'])
-    female.set_format(type='torch', columns=['input_ids', 'attention_mask', 'keyword_mask'])
-    target.set_format(type='torch', columns=['input_ids', 'attention_mask', 'keyword_mask'])
-
-    male.save_to_disk(data_root / "male")
-    female.save_to_disk(data_root / "female")
-    target.save_to_disk(data_root / "stereotype")
-
-    return {"male": male, "female": female, "stereotype": target}
-
-
-def get_keyword(example, male_attr, female_attr, stereo_trgt, pattern):
-    line = example['text']
-
-    keywords = []
-
-    line = line.strip()
-    line_tokenized = {token.strip().lower() for token in re.findall(pattern, line)}
-
-    # Dicts containing M/F/S attributes/targets in each sentence
-    male = line_tokenized & male_attr
-    female = line_tokenized & female_attr
-    stereo = line_tokenized & stereo_trgt
-
-    keyword_type = "none"
-
-    # Note that a sentence might contain attributes of only one category
-    #   M/F/S. That's why we check for emptiness of other sets.
-
-    # Sentences with male attributes
-    if len(male) > 0 and len(female) == 0:
-        keywords.extend(male)
-        keyword_type = "male"
-
-    # Sentences with female attributes
-    if len(female) > 0 and len(male) == 0:
-        keywords.extend(female)
-        keyword_type = "female"
-
-    # Sentences with stereotype target
-    if len(stereo) > 0 and len(male) == 0 and len(female) == 0:
-        keywords.extend(stereo)
-        keyword_type = "stereotype"
-
-    example['keywords'] = keywords
-    example['type'] = keyword_type
-
-    return example
+    return dataset
 
 
 def get_keyword_mask(example, tokenizer):
