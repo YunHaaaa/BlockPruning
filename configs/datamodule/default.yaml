@@ -4,9 +4,13 @@ model_name: ${model.model_name}
 batch_size: 128
 data_dir: ${data_dir}
 
-datafiles:
-    plaintext: 'http://data.statmt.org/news-commentary/v15/training-monolingual/news-commentary-v15.en.gz'
+dataset_name: 'glue'
+task_name: 'cola'
+# Please pick one among the available configs: ['cola', 'sst2', 'mrpc', 'qqp', 'stsb', 'mnli', 'mnli_mismatched', 'mnli_matched', 'qnli', 'rte', 'wnli', 'ax']
 
+train_file: 
+validation_file: 
+test_file: 
 
 seed: ${seed}
 num_proc: 32
