@@ -136,15 +136,7 @@ class Pipeline(nn.Module):
             return_word_embs: bool = None,
             embedding_layer: str = None,
     ) -> torch.tensor:
-        """Feed forward the model anbd extract embeddings.
-
-        Args:
-            sentences: tokenized sentence
-            return_word_embs: if specified, shadows self.return_word_embs.
-                If True, extracts word embeddings indicated by sentences['keyword_mask'].
-            embedding_layer: if specified, shadows self.embedding_layer.
-                One of: first|last|all|CLS.
-        """
+        
         outputs = self.forward_model(sentences)
 
         # Choose where to get embeddings from (first, last, all layers...)
@@ -153,11 +145,5 @@ class Pipeline(nn.Module):
         return_word_embs = self.return_word_embs if return_word_embs is None else return_word_embs
 
         embeddings = self.get_embeddings(outputs, embedding_layer)
-
-        if return_word_embs and embedding_layer != 'CLS':
-            return self.get_word_embeddings(
-                x=embeddings,
-                mask=sentences['keyword_mask']
-            )
 
         return embeddings
