@@ -7,8 +7,6 @@ from pytorch_lightning import LightningModule
 
 from src.utils.utils import get_logger
 from src.models.modules.pipeline import Pipeline
-from src.models.modules.tokenizer import Tokenizer
-
 
 from transformers import AdamW, get_linear_schedule_with_warmup
 
@@ -56,8 +54,6 @@ class Pruner(LightningModule):
             is_glue=self.is_glue
         )
 
-        self.tokenizer = Tokenizer(self.model_name)
-
     def forward(self, inputs, return_word_embs=None, embedding_layer=None):
         return self.model_pruning(inputs, return_word_embs, embedding_layer)
 
@@ -74,6 +70,32 @@ class Pruner(LightningModule):
         loss = self.loss_alpha  + self.loss_beta 
 
         return loss
+
+    # def step(self, batch) -> Dict[str, float]:
+    #     targets = self(batch["targets"])
+
+    #     attributes = self(
+    #         batch['attributes'], return_word_embs=True, embedding_layer='all'
+    #     )
+    #     attributes_original = self.forward_original(
+    #         batch['attributes'], return_word_embs=True, embedding_layer='all'
+    #     )
+
+    #     loss_debias = self.loss_debias(
+    #         static_attributes=self.non_contextualized, targets=targets
+    #     )
+    #     loss_regularize = self.loss_regularize(
+    #         attributes=attributes, attributes_original=attributes_original
+    #     )
+
+    #     loss = self.loss_alpha * loss_debias + self.loss_beta * loss_regularize
+
+    #     return {
+    #         "loss": loss,
+    #         "loss_debias": loss_debias,
+    #         "loss_regularize": loss_regularize
+    #     }
+
 
     def log_loss(self, loss:  float, stage: str):
         self.log(

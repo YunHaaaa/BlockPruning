@@ -6,7 +6,6 @@ from datasets import load_from_disk
 
 from torch.utils.data import DataLoader
 
-from src.models.modules.tokenizer import Tokenizer
 from src.utils.utils import get_logger
 
 
@@ -30,7 +29,6 @@ class DataModule(LightningDataModule):
 
     def __post_init__(self):
         super().__init__()
-        self.tokenizer = Tokenizer(self.model_name)
         self.data_dir = Path(self.data_dir)
 
         self.dataset_cache = self.data_dir / "dataset" / self.model_name / str(self.seed)

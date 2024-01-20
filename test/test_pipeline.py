@@ -12,7 +12,6 @@ class TestPipeline(unittest.TestCase):
     def setUp(self) -> None:
 
         self.model_name = 'distilbert-base-uncased'
-        # self.tokenizer = Tokenizer(self.model_name)
         self.pipeline = Pipeline(self.model_name, 'last', 'sentence')
 
         # Common data

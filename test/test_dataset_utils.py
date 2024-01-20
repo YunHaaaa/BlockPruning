@@ -1,9 +1,5 @@
 import unittest
 import regex as re
-import torch
-
-from src.models.modules.tokenizer import Tokenizer
-
 
 # From project root dir:
 # python -m unittest

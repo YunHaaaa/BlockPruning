@@ -6,7 +6,6 @@ from omegaconf import DictConfig
 from pathlib import Path
 
 from src.models.modules.pipeline import Pipeline
-from src.models.modules.tokenizer import Tokenizer
 
 
 def dict_to_device(dictornary, device):
@@ -16,7 +15,6 @@ def dict_to_device(dictornary, device):
 def evaluate(model_name, device, data, data_root):
 
     model = Pipeline(model_name, embedding_layer='CLS', mode='sentence').to(device)
-    tokenizer = Tokenizer(model_name)
 
     results = {}
 
