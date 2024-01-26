@@ -2,7 +2,7 @@
 defaults:
   - /pruning: sparse_trainer_args.yaml
   - override /trainer: default.yaml
-  - override /model: pruning.yaml
+  - override /model: pruner.yaml
   - override /datamodule: default.yaml
   - override /callbacks: default.yaml
   - override /logger: tensorboard.yaml

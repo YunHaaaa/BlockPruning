@@ -2,7 +2,7 @@
 ## Reproducibility
 Setup
 ```bash
-conda env create -f envs/pruning.yaml
+conda env create -f envs/pruner.yaml
 conda activate pruning
 pip uninstall nn_pruning
 pip install git+https://github.com/[anonymized]/nn_pruning.git@automodel
